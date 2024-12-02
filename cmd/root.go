@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -16,39 +18,14 @@ var (
 var rootCmd = &cobra.Command{
 	Use:  "goskii",
 	Short: "goskii is a CLI tool to convert images to ASCII art.",
+
 	Run: func(cmd *cobra.Command, args []string) {
-		if pFlag == "" {
-			cmd.Help()
+		if !CheckFilePath(cmd, &pFlag) {
 			os.Exit(1)
 		}
 
-		// Check if the path exists.
-		if _, err := os.Stat(pFlag); os.IsNotExist(err) {
-			fmt.Printf("The path or file \"%s\" does not exist.\n", pFlag)
+		if !CheckOutputPath(cmd, &oFlag) {
 			os.Exit(1)
-		}
-
-		// Check if the output folder exists.
-		if oFlag != "" {
-			// No-op if -o not provided. 
-		} else if oFlag == "." {
-			cwd, err := os.Getwd()
-			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
-			}
-			oFlag = cwd
-		} else {
-			if info, err := os.Stat(oFlag); os.IsNotExist(err) {
-				fmt.Printf("The output folder \"%s\" does not exist.\n", oFlag)
-				os.Exit(1)
-			} else if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				os.Exit(1)
-			} else if !info.IsDir() {
-				fmt.Printf("The output path \"%s\" is not a directory.\n", oFlag)
-				os.Exit(1)
-			}
 		}
 	},
 }
@@ -63,6 +40,69 @@ func Execute() {
 	}
 } 
 
+// Returns all the command line arguments.
 func GetPaths() (string, string) {
 	return pFlag, oFlag
+}
+
+// Checks whether the file extension is supported.
+func CheckExtension(path string) bool {
+	ext := strings.ToLower(filepath.Ext(path))
+	switch ext {
+	case ".jpg", ".jpeg", ".png", ".webp", ".tiff", ".bmp":
+		return true
+	default:
+		return false
+	}
+}
+
+// Checks whether the file path is valid and the file extension is supported.
+func CheckFilePath(cmd *cobra.Command, path *string) bool {
+	if *path == "" {
+		cmd.Help()
+		return false
+	}
+
+	if _, err := os.Stat(*path); os.IsNotExist(err) {
+		fmt.Printf("The path or file \"%s\" does not exist.\n", *path)
+		return false
+	}
+
+	if !CheckExtension(*path) {
+		fmt.Printf("The file extension is not supported.\n")
+		return false
+	}
+
+	return true
+}
+
+// Checks whether the output path is valid and a directory.
+func CheckOutputPath(cmd *cobra.Command, path *string) bool {
+	if *path == "" {
+        return true
+    }
+
+    if *path == "." {
+        cwd, err := os.Getwd()
+        if err != nil {
+            fmt.Printf("Error getting current working directory: %v\n", err)
+            return false
+        }
+        *path = cwd
+        return true
+    }
+
+    info, err := os.Stat(*path)
+    if os.IsNotExist(err) {
+        fmt.Printf("The output folder \"%s\" does not exist.\n", *path)
+        return false
+    } else if err != nil {
+        fmt.Printf("Error: %v\n", err)
+        return false
+    } else if !info.IsDir() {
+        fmt.Printf("The output path \"%s\" is not a directory.\n", *path)
+        return false
+    }
+
+    return true
 }

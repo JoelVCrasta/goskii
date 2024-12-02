@@ -5,30 +5,6 @@ import (
 	"image/color"
 )
 
-// Resize resizes an image to the specified width and height.
-func Resize(img image.Image, bounds image.Rectangle, newWidth, newHeight int) (*image.RGBA, error) {
-	width, height, err := CalculateNewBounds(bounds.Dx(), bounds.Dy())
-	if  err != nil {
-		return nil, err
-	}
-
-	resizedImage := BilinearResize(img, bounds, width, height)
-	return resizedImage, nil
-}
-
-// ResizeGray resizes a grayscale image to the specified width and height.
-// Faster as it only uses the gray channel of the image.
-func ResizeGray(img *image.Gray, bounds image.Rectangle, newWidth, newHeight int) (*image.Gray, error) {
-	width, height, err := CalculateNewBounds(bounds.Dx(), bounds.Dy())
-	if  err != nil {
-		return nil, err
-	}
-
-	resizedImage := BilinearResizeGray(img, bounds, width, height)
-	return resizedImage, nil
-}
-
-
 func min(a, b int) int {
 	if a < b {
 		return a
@@ -36,13 +12,11 @@ func min(a, b int) int {
 	return b
 }
 
-
 func bilinearInterpolate(q11, q21, q12, q22 uint32, dx, dy float64) float64 {
 	top := (1-dx)*float64(q11) + dx*float64(q21)
 	bottom := (1-dx)*float64(q12) + dx*float64(q22)
 	return (1-dy)*top + dy*bottom
 }
-
 
 func BilinearResize(img image.Image, bounds image.Rectangle, newWidth, newHeight int) *image.RGBA {
 	origWidth := bounds.Dx()
@@ -91,7 +65,6 @@ func BilinearResize(img image.Image, bounds image.Rectangle, newWidth, newHeight
 
 	return resizedImage
 }
-
 
 func BilinearResizeGray(img *image.Gray, bounds image.Rectangle, newWidth, newHeight int) *image.Gray {
 	origWidth := bounds.Dx()

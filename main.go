@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
+	"github.com/JoelVCrasta/goskii/cmd"
 )
 
-func main()  {
-	
+func main() {
+	cmd.Execute()
+
 }

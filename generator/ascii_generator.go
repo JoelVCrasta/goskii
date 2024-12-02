@@ -15,7 +15,7 @@ var (
 	CHARSET_2 = []string{"@", "$", "%", "#", "?", "*", "+", "-", ":", "."}
 )
 
-func GenerateASCII(img image.Gray, width, height int, charset []string) string {
+func GenerateASCII(img *image.Gray, width, height int, charset []string) string {
 	var builder strings.Builder
 
 	for y := 0; y < height; y++ {

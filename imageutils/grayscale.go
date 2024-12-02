@@ -5,6 +5,8 @@ import (
 	"image/color"
 )
 
+// Grayscale converts an image to grayscale using the formula:
+// gray = 0.299*r + 0.587*g + 0.114*b
 func Grayscale(img image.Image) *image.Gray {
 	bounds := img.Bounds()
 	grayImg := image.NewGray(bounds)

@@ -41,7 +41,7 @@ func Execute() {
 } 
 
 // Returns all the command line arguments.
-func GetPaths() (string, string) {
+func GetCommands() (string, string) {
 	return pFlag, oFlag
 }
 

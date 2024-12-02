@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type ImageInfo struct {
+type ImageData struct {
 	Path string
 	Image image.Image
 	Bounds image.Rectangle
@@ -16,7 +16,7 @@ type ImageInfo struct {
 	FileName string
 }
 
-func LoadImage(path string) (*ImageInfo, error) {
+func LoadImage(path string) (*ImageData, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("error opening file: %v", err)
@@ -33,7 +33,7 @@ func LoadImage(path string) (*ImageInfo, error) {
 	height := bounds.Max.Y - bounds.Min.Y
 	fileName := path[strings.LastIndex(path, "/")+1:]
 
-	return &ImageInfo{
+	return &ImageData{
         Path:     path,
         Image:    img,
         Width:    width,

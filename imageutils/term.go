@@ -39,12 +39,12 @@ func CalculateNewBounds(width, height int) (int, int, error) {
 
 	var scalingFactor float64
 	if terminalRatio > imageRatio {
-		scalingFactor = float64(terminalHeight) * heightScale / float64(height)
+		scalingFactor = float64(terminalHeight) / float64(height)
 	} else {
 		scalingFactor = float64(terminalWidth) / float64(width)
 	}
 
-	newWidth := int(float64(width) * scalingFactor)
+	newWidth := int(float64(width) * scalingFactor * heightScale)
 	newHeight := int(float64(height) * scalingFactor)
 
 	return newWidth, newHeight, nil

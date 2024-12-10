@@ -3,6 +3,8 @@ package imageutils
 import (
 	"fmt"
 	"image"
+	_ "image/jpeg"
+	_ "image/png"
 	"os"
 	"strings"
 )
@@ -10,10 +12,10 @@ import (
 type ImageData struct {
 	Path string
 	Image image.Image
-	Bounds image.Rectangle
 	Width int
 	Height int
 	FileName string
+	Extension string
 }
 
 func LoadImage(path string) (*ImageData, error) {
@@ -32,13 +34,14 @@ func LoadImage(path string) (*ImageData, error) {
 	width := bounds.Max.X - bounds.Min.X
 	height := bounds.Max.Y - bounds.Min.Y
 	fileName := path[strings.LastIndex(path, "/")+1:]
+	extension := strings.ToLower(path[strings.LastIndex(path, ".")+1:])
 
 	return &ImageData{
         Path:     path,
         Image:    img,
         Width:    width,
         Height:   height,
-        Bounds:   bounds,
         FileName: fileName,
+		Extension: extension,
     }, nil
 }

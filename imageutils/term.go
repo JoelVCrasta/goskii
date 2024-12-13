@@ -27,12 +27,13 @@ func GetTerminalSize() (int, int, error) {
 // First, it gets the terminal size
 // Then, it calculates the scaling factor for the image based on the terminal size and the image size
 // Finally, it calculates the new width and height of the image based on the scaling factor
-func CalculateNewBounds(width, height int) (int, int, error) {
+func CalculateNewBounds(width, height, size int) (int, int, error) {
 	terminalWidth, terminalHeight, err := GetTerminalSize()
 	if err != nil {
 		return 0, 0, err
 	}
 
+	
 	heightScale := 2.0 // default scale to compensate character height of the terminal
 	terminalRatio := float64(terminalWidth) / float64(terminalHeight)
 	imageRatio := float64(width) / float64(height)

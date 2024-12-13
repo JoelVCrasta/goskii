@@ -6,6 +6,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -33,8 +34,10 @@ func LoadImage(path string) (*ImageData, error) {
 	bounds := img.Bounds()
 	width := bounds.Max.X - bounds.Min.X
 	height := bounds.Max.Y - bounds.Min.Y
-	fileName := path[strings.LastIndex(path, "/")+1:]
-	extension := strings.ToLower(path[strings.LastIndex(path, ".")+1:])
+	extension := filepath.Ext(path)
+	fileName := strings.TrimSuffix(filepath.Base(path), extension)
+	// fileName := path[strings.LastIndex(path, "/")+1:]
+	// extension := strings.ToLower(path[strings.LastIndex(path, ".")+1:])
 
 	return &ImageData{
         Path:     path,

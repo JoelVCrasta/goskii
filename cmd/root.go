@@ -9,30 +9,40 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	pFlag string
-	oFlag string
+type Command struct {
+	Path   	string
+	Output 	string
+	Size  	int
+}
 
-)
+var cmdFlags Command
 
 var rootCmd = &cobra.Command{
 	Use:  "goskii",
 	Short: "goskii is a CLI tool to convert images to ASCII art.",
 
 	Run: func(cmd *cobra.Command, args []string) {
-		if !CheckFilePath(cmd, &pFlag) {
+		if !checkFilePath(cmd, &cmdFlags.Path) {
 			os.Exit(1)
 		}
 
-		if !CheckOutputPath(cmd, &oFlag) {
+		if !checkOutputPath(cmd, &cmdFlags.Output) {
+			os.Exit(1)
+		}
+
+		if !checkSize(cmdFlags.Size) {
 			os.Exit(1)
 		}
 	},
 }
 
 func Execute() {
-	rootCmd.Flags().StringVarP(&pFlag, "path", "p", "", "Path to the file.")
-	rootCmd.Flags().StringVarP(&oFlag, "output", "o", ".", "Output folder path. Save the ASCII art to a file.")
+	rootCmd.Flags().StringVarP(&cmdFlags.Path, "path", "p", "", "Path to the file. (Required)")
+	rootCmd.Flags().StringVarP(&cmdFlags.Output, "output", "o", "", "Output folder path. Save the ASCII art to a file. ('.' for current directory)")
+	rootCmd.Flags().IntVarP(&cmdFlags.Size, "size", "s", 0, "Size of the ASCII art (1 - 100). By default the ASCII art will be scaled to the size of the terminal.")
+	rootCmd.MarkPersistentFlagRequired("path")
+
+	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
@@ -41,12 +51,12 @@ func Execute() {
 } 
 
 // Returns all the command line arguments.
-func GetCommands() (string, string) {
-	return pFlag, oFlag
+func GetCommands() Command {
+	return cmdFlags
 }
 
 // Checks whether the file extension is supported.
-func CheckExtension(path string) bool {
+func checkExtension(path string) bool {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".jpg", ".jpeg", ".png", ".webp", ".tiff", ".bmp":
@@ -57,7 +67,7 @@ func CheckExtension(path string) bool {
 }
 
 // Checks whether the file path is valid and the file extension is supported.
-func CheckFilePath(cmd *cobra.Command, path *string) bool {
+func checkFilePath(cmd *cobra.Command, path *string) bool {
 	if *path == "" {
 		cmd.Help()
 		return false
@@ -68,7 +78,7 @@ func CheckFilePath(cmd *cobra.Command, path *string) bool {
 		return false
 	}
 
-	if !CheckExtension(*path) {
+	if !checkExtension(*path) {
 		fmt.Printf("The file extension is not supported.\n")
 		return false
 	}
@@ -77,7 +87,7 @@ func CheckFilePath(cmd *cobra.Command, path *string) bool {
 }
 
 // Checks whether the output path is valid and a directory.
-func CheckOutputPath(cmd *cobra.Command, path *string) bool {
+func checkOutputPath(_ *cobra.Command, path *string) bool {
 	if *path == "" {
         return true
     }
@@ -105,4 +115,13 @@ func CheckOutputPath(cmd *cobra.Command, path *string) bool {
     }
 
     return true
+}
+
+func checkSize(size int) bool {
+	if size < 1 || size > 100 {
+		fmt.Println("The size should be between 1 and 100.")
+		return false
+	}
+
+	return true
 }

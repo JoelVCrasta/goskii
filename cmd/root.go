@@ -39,7 +39,7 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	rootCmd.Flags().StringVarP(&cmdFlags.Path, "path", "p", "", "Path to the file. (Required)")
 	rootCmd.Flags().StringVarP(&cmdFlags.Output, "output", "o", "", "Output folder path. Save the ASCII art to a file. ('.' for current directory)")
-	rootCmd.Flags().IntVarP(&cmdFlags.Size, "size", "s", 0, "Size of the ASCII art (1 - 100). By default the ASCII art will be scaled to the size of the terminal.")
+	rootCmd.Flags().IntVarP(&cmdFlags.Size, "size", "s", 0, "Size of the ASCII art (1 - 500). By default the ASCII art will be scaled to the size of the terminal.")
 	rootCmd.MarkPersistentFlagRequired("path")
 
 	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
@@ -118,8 +118,8 @@ func checkOutputPath(_ *cobra.Command, path *string) bool {
 }
 
 func checkSize(size int) bool {
-	if size < 1 || size > 100 {
-		fmt.Println("The size should be between 1 and 100.")
+	if size < 0 || size > 500 {
+		fmt.Println("The size should be between 1 and 500.")
 		return false
 	}
 

@@ -33,22 +33,30 @@ func CalculateNewBounds(width, height, size int) (int, int, error) {
 		return 0, 0, err
 	}
 
-	
 	heightScale := 2.0 // default scale to compensate character height of the terminal
-	terminalRatio := float64(terminalWidth) / float64(terminalHeight)
-	imageRatio := float64(width) / float64(height)
+	var newWidth, newHeight int
+	if (size == 0) {
+		terminalRatio := float64(terminalWidth) / float64(terminalHeight)
+		imageRatio := float64(width) / float64(height)
+		
+		var scalingFactor float64
+		if terminalRatio > imageRatio {
+			scalingFactor = float64(terminalHeight) / float64(height) 
+		} else {
+			scalingFactor = float64(terminalWidth) / float64(width)
+		}
+		
+		newWidth := int(float64(width) * scalingFactor * heightScale)
+		newHeight := int(float64(height) * scalingFactor)
 
-	var scalingFactor float64
-	if terminalRatio > imageRatio {
-		scalingFactor = float64(terminalHeight) / float64(height)
+		return newWidth, newHeight, nil
 	} else {
-		scalingFactor = float64(terminalWidth) / float64(width)
+		newWidth = size
+		newHeight = int(float64(height) * float64(newWidth) / (float64(width) * heightScale))
+
+		return newWidth, newHeight, nil
 	}
 
-	newWidth := int(float64(width) * scalingFactor * heightScale)
-	newHeight := int(float64(height) * scalingFactor)
-
-	return newWidth, newHeight, nil
 }
 
 
@@ -65,4 +73,3 @@ func ClearTerminal() {
 	cmd.Stdout = os.Stdout
 	cmd.Run()
 }
-

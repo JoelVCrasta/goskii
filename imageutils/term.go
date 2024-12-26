@@ -24,9 +24,11 @@ func GetTerminalSize() (int, int, error) {
 }
 
 
-// First, it gets the terminal size
-// Then, it calculates the scaling factor for the image based on the terminal size and the image size
-// Finally, it calculates the new width and height of the image based on the scaling factor
+// First, it gets the terminal size.
+// If the size is 0, it calculates the scaling factor for the image based on the terminal size and the image size.
+// Then, it calculates the new width and height of the image based on the scaling factor.
+// If the size is user input, it calculates the new height based on the flag size.
+// It returns the new width and height.
 func CalculateNewBounds(width, height, size int) (int, int, error) {
 	terminalWidth, terminalHeight, err := GetTerminalSize()
 	if err != nil {

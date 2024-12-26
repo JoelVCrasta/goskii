@@ -6,20 +6,27 @@ import (
 	"strings"
 )
 
-// ASCII character sets to represent the image.
 var (
-	// The characters are ordered from darkest to lightest.
+	// The characters are ordered from lightest to darkest.
 	CHARSET_1 = []string{".", ":", "-", "+", "*", "?", "#", "%", "$", "@"}
 
-	// The characters are ordered from lightest to darkest.
+	// The characters are ordered from darkest to lighest.
 	CHARSET_2 = []string{"@", "$", "%", "#", "?", "*", "+", "-", ":", "."}
-)
 
-func getASCIIChar(c color.Gray, charset []string ) string {
+	// Block shades ordered from lightest to darkest.
+	CHARSET_3 = []string{" ", "░", "▒", "▓", "█"}
+
+	// Block shades ordered from darkest to lightest.
+	CHARSET_4 = []string{"█", "▓", "▒", "░", " "}
+)
+var Charsets = [][]string{CHARSET_1, CHARSET_2, CHARSET_3, CHARSET_4}
+
+
+func getASCIIChar(c color.Gray, charset []string) string {
 	gray := c.Y
 	normalized := int(float64(gray) / 255.0 * float64(len(charset)-1))
 
-	return CHARSET_1[normalized]
+	return charset[normalized]
 }
 
 

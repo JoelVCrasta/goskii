@@ -9,31 +9,23 @@ import (
 )
 
 // Converts the Non Alpha image to ASCII.
-func imageRGB(imageData *imageutils.ImageData, width int, height int, shouldPrint bool) string {
+func imageRGB(imageData *imageutils.ImageData, width int, height, charset int) string {
 	imageGray := imageutils.Grayscale(imageData.Image)
 	resizedImage := imageutils.BilinearResizeGray(imageGray, width, height)
 
-	ascii := generator.GenerateASCII(resizedImage, width, height, generator.CHARSET_1)
-
-	if !shouldPrint {
-		fmt.Println(ascii)
-	}
+	ascii := generator.GenerateASCII(resizedImage, width, height, generator.Charsets[charset-1])
 
 	return ascii
 }
 
 // Converts the Alpha image to ASCII. This is for PNG images.
-func imageRGBA(imageData *imageutils.ImageData, width int, height int, shouldPrint bool) string {
+func imageRGBA(imageData *imageutils.ImageData, width int, height, charset int) string {
 	imageGray, alpha := imageutils.GrayscaleAlpha(imageData.Image)
 	resizedImage := imageutils.BilinearResizeGray(imageGray, width, height)
 	alpha = imageutils.ResizeAlpha(alpha, imageData.Width, imageData.Height, width, height)
 
-	ascii := generator.GenerateASCIIAlpha(resizedImage, alpha, width, height, generator.CHARSET_1)
+	ascii := generator.GenerateASCIIAlpha(resizedImage, alpha, width, height, generator.Charsets[charset-1])
 	
-	if !shouldPrint {
-		fmt.Println(ascii)
-	}
-
 	return ascii
 }
 
@@ -64,10 +56,15 @@ func ImageToASCII(
 
 	var ascii string
 	if imageData.Extension == "png" {
-		ascii = imageRGBA(imageData, width, height, shouldPrint)
+		ascii = imageRGBA(imageData, width, height, flags.Charset)
 	} else {
-		ascii = imageRGB(imageData, width, height, shouldPrint)
+		ascii = imageRGB(imageData, width, height, flags.Charset)
 	}
+
+	if !shouldPrint {
+		fmt.Println(ascii)
+	}
+
 
 	if flags.Output != "" {
 		imageutils.SaveToTextFile(ascii, flags.Output, imageData.FileName)

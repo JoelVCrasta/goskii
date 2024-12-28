@@ -6,6 +6,7 @@ import (
 
 	"github.com/JoelVCrasta/goskii/cmd"
 	"github.com/JoelVCrasta/goskii/convertor"
+	"github.com/JoelVCrasta/goskii/imageutils"
 )
 
 func main() {
@@ -19,9 +20,14 @@ func main() {
 			}
 		}
 	}
-	
-	err := convertor.ImageToASCII(cmdFlags)
-	if err != nil {
-		fmt.Print(err)
+
+	if (cmdFlags.Path != "") {
+		err := convertor.ImageToASCII(cmdFlags)
+		if err != nil {
+			fmt.Print(err)
+		}
+	} else if (cmdFlags.Render != "") {
+		imageutils.Render(cmdFlags.Render)
 	}
+	
 }

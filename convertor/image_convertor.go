@@ -13,7 +13,7 @@ func imageRGB(imageData *imageutils.ImageData, width int, height, charset int) s
 	imageGray := imageutils.Grayscale(imageData.Image)
 	resizedImage := imageutils.BilinearResizeGray(imageGray, width, height)
 
-	ascii := generator.GenerateASCII(resizedImage, width, height, generator.Charsets[charset-1])
+	ascii := generator.GenerateASCII(resizedImage, width, height, charset)
 
 	return ascii
 }
@@ -24,7 +24,7 @@ func imageRGBA(imageData *imageutils.ImageData, width int, height, charset int) 
 	resizedImage := imageutils.BilinearResizeGray(imageGray, width, height)
 	alpha = imageutils.ResizeAlpha(alpha, imageData.Width, imageData.Height, width, height)
 
-	ascii := generator.GenerateASCIIAlpha(resizedImage, alpha, width, height, generator.Charsets[charset-1])
+	ascii := generator.GenerateASCIIAlpha(resizedImage, alpha, width, height, charset)
 	
 	return ascii
 }
@@ -64,7 +64,6 @@ func ImageToASCII(
 	if !shouldPrint {
 		fmt.Println(ascii)
 	}
-
 
 	if flags.Output != "" {
 		imageutils.SaveToTextFile(ascii, flags.Output, imageData.FileName)

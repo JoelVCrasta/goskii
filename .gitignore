@@ -1,11 +1,4 @@
-*.jpeg
-*.jpg
-*.png
-*.gif
-*.svg
-*.webp
-*.tiff
-*.bmp
+/assets
+/dist
 
-goskii
-goskii.exe
+build.sh

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/JoelVCrasta/goskii/generator"
 	"github.com/spf13/cobra"
 )
 
@@ -15,13 +16,14 @@ const (
     MaxSize         = 500
     DefaultCharset  = 1
     MinCharset      = 1
-    MaxCharset      = 10
+    MaxCharset      = 13
 	Version 		= "1.0"
 )
 
 type Command struct {
 	Path   			string
 	Output 			string
+	Render  		string
 	Size  			int
 	Charset 		int
 }
@@ -42,13 +44,15 @@ var rootCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		if !checkFilePath(cmd, &cmdFlags.Path) {
+		if !checkFilePath(cmd, &cmdFlags.Path) && !checkRender(cmd, &cmdFlags.Render) {
+			cmd.Help()
 			os.Exit(1)
 		}
 
 		if !checkOutputPath(cmd, &cmdFlags.Output) {
 			os.Exit(1)
 		}
+
 
 		if !checkSize(cmd, &cmdFlags.Size) {
 			os.Exit(1)
@@ -62,7 +66,8 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	rootCmd.Flags().StringVarP(&cmdFlags.Path, "path", "p", "","Path to the file. (Required)")
-    rootCmd.Flags().StringVarP(&cmdFlags.Output, "output", "o", ".", "Output folder path. Default is current directory.")
+    rootCmd.Flags().StringVarP(&cmdFlags.Output, "output", "o", "", "Output folder path. Default is current directory.")
+	rootCmd.Flags().StringVarP(&cmdFlags.Render, "render", "r", "", "Render the contents of the ASCII art file.")
     rootCmd.Flags().IntVarP(&cmdFlags.Size, "width", "w", DefaultSize, fmt.Sprintf("Width of the ASCII art (%d - %d). Default adjusts to terminal size.", MinSize, MaxSize))
     rootCmd.Flags().IntVarP(&cmdFlags.Charset, "charset", "c", DefaultCharset, fmt.Sprintf("Character set to use (%d - %d).", MinCharset, MaxCharset))
     rootCmd.Flags().BoolP("showset", "s", false, "Display all character sets.")
@@ -96,8 +101,6 @@ func checkExtension(path string) bool {
 // Checks whether the file path is valid and the file extension is supported.
 func checkFilePath(cmd *cobra.Command, path *string) bool {
 	if *path == "" {
-		cmd.Help()
-		cmd.PrintErrf("The path to the file is required.\n")
 		return false
 	}
 
@@ -145,6 +148,24 @@ func checkOutputPath(cmd *cobra.Command, path *string) bool {
     return true
 }
 
+func checkRender(cmd *cobra.Command, path *string) bool {
+	if *path == "" {
+		return false
+	}
+
+	if _, err := os.Stat(*path); os.IsNotExist(err) {
+		cmd.PrintErrf("The path or file \"%s\" does not exist or not valid.\n", *path)
+		return false
+	}
+
+	if filepath.Ext(*path) != ".txt" {
+		cmd.PrintErrf("The file extension is not supported.\n")
+		return false
+	}
+
+	return true
+}
+
 // Checks whether the size is between 0 and 500.
 func checkSize(cmd *cobra.Command, size *int) bool {
 	if *size < MinSize || *size > MaxSize {
@@ -157,8 +178,8 @@ func checkSize(cmd *cobra.Command, size *int) bool {
 
 // Checks whether the charset is between 1 and 10.
 func checkCharset(cmd *cobra.Command, charset *int) bool {
-	if *charset < MinCharset || *charset > MinCharset {
-		cmd.PrintErrf("The charset should be between %d and %d.", MinCharset, MaxCharset)
+	if *charset < MinCharset || *charset > MaxCharset {
+		cmd.PrintErrf("The charset should be between %d and %d.\n", MinCharset, MaxCharset)
 		return false
 	}
 
@@ -167,23 +188,27 @@ func checkCharset(cmd *cobra.Command, charset *int) bool {
 
 // Displays all the character sets.
 func showShowset() {
-	charsets := map[string]string{
-        "1": ". : - + * ? # % $ @",
-        "2": "@ $ % # ? * + - : .",
-        "3": "  ░ ▒ ▓ █",
-        "4": "█ ▓ ▒ ░  ",
-    }
-
-	charsetsDesc := map[string]string{
-		"1": "Lightest to darkest characters. Better for terminal. (Default)",
-		"2": "Darkest to lightest characters. Better for light background.",
-		"3": "Lightest to darkest block shades. (Unicode)",
-		"4": "Darkest to lightest block shades. (Unicode)",
+	charsetsDesc := map[int]string{
+		1: "ASCII 1 Lightest to darkest characters. Better for terminal. (Default)",
+		2: "ASCII 1 Darkest to lightest characters. Better for light background.",
+		3: "ASCII 2 Lightest to darkest characters.",
+		4: "ASCII 2 Darkest to lightest characters.",
+		5: "ASCII 3 Mixed.",
+		6: "ASCII 4 Mixed.",
+		7: "Numeric characters.",
+		8: "Alphabetic characters.",
+		9: "Alphanumeric characters.",
+		10: "Lightest to darkest block shades (Code Page 437).",
+		11: "Darkest to lightest block shades (Code Page 437).",
+		12: "Mathematical Operators (Unicode).",
+		13: "Arrows (Unicode).",
 	}
 
-	for key, value := range charsets {
-		fmt.Printf("%s\n", charsetsDesc[key])
-		fmt.Printf("%s) %s\n\n", key, value)
+	charsets := generator.GetCharsets()
+	for i, set := range charsets {
+		setStr := strings.Join(set, " ")
+		fmt.Printf("%s\n", charsetsDesc[i+1])
+		fmt.Printf("%d) %s\n\n", i+1, setStr)
 	}
 
 	fmt.Println("Note: The Unicode characters may not work in all terminals.")

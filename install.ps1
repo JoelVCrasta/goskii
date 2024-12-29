@@ -32,7 +32,7 @@ if (-not $LatestVersion) {
 }
 
 
-$Binary = "$AppName-windows-amd64.exe"
+$Binary = "$AppName-windows-amd64"
 $DownloadUrl = "https://github.com/$Repo/releases/download/$LatestVersion/$Binary"
 
 if (-not (Test-Path -Path $BinDir)) {

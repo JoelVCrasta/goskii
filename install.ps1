@@ -12,7 +12,7 @@ If (-Not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 $OS = $env:OS
 $Arch = [System.Environment]::Is64BitOperatingSystem
 
-if (-not $OS or $OS -notlike "*Windows*") {
+if (-not $OS -or $OS -notlike "*Windows*") {
     Write-Host "Unsupported OS: $OS"
     exit 1
 }

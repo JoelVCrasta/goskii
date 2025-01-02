@@ -11,9 +11,9 @@ import (
 // Converts the Non Alpha image to ASCII.
 func imageRGB(imageData *imageutils.ImageData, width int, height, charset int) string {
 	imageGray := imageutils.Grayscale(imageData.Image)
-	resizedImage := imageutils.BilinearResizeGray(imageGray, width, height)
+	resizedImage := imageutils.ResizeGray(imageGray, width, height)
 
-	ascii := generator.GenerateASCII(resizedImage, width, height, charset)
+	ascii := generator.GenerateASCII(resizedImage, width, height, charset - 1)
 
 	return ascii
 }
@@ -21,7 +21,7 @@ func imageRGB(imageData *imageutils.ImageData, width int, height, charset int) s
 // Converts the Alpha image to ASCII. This is for PNG images.
 func imageRGBA(imageData *imageutils.ImageData, width int, height, charset int) string {
 	imageGray, alpha := imageutils.GrayscaleAlpha(imageData.Image)
-	resizedImage := imageutils.BilinearResizeGray(imageGray, width, height)
+	resizedImage := imageutils.ResizeGray(imageGray, width, height)
 	alpha = imageutils.ResizeAlpha(alpha, imageData.Width, imageData.Height, width, height)
 
 	ascii := generator.GenerateASCIIAlpha(resizedImage, alpha, width, height, charset)

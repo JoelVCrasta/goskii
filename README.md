@@ -1,6 +1,6 @@
 # goskii
 
-goskii is a command-line tool for converting images into ASCII art. Designed for simplicity and efficiency, it allows users to create artistic text-based art of their images directly from the terminal.
+goskii is a command-line tool for converting both local or web images into ASCII art. Designed for simplicity and efficiency, it allows users to create artistic text-based art of their images directly from the terminal.
 Future updates aim to include video support, making goskii a comprehensive tool for making ASCII art.
 
 ![Version](https://img.shields.io/badge/Version-1.0-blue.svg)
@@ -8,6 +8,7 @@ Future updates aim to include video support, making goskii a comprehensive tool 
 ## Features
 
 - Fast image-to-ASCII conversion
+- Covert web images to ASCII
 - Save and render ASCII art
 - 13 ASCII character sets
 - Customize image size
@@ -44,3 +45,35 @@ Set-ExecutionPolicy Bypass -Scope Process -Force; Invoke-WebRequest -Uri "https:
 | `--showset, -s` | `flag`   | Display all available character sets                               |
 | `--version, -v` | `flag`   | Show the version of goskii                                         |
 | `--width, -w`   | `int`    | Width of the ASCII art (1 - 500). Default adjusts to terminal size |
+
+## Examples
+
+Covert local image to ASCII art.
+
+```
+goskii -p ./example.png
+```
+
+Convert web-hosted image to ASCII art.
+
+```
+goskii -p "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQE67yVsNZ_zCtVCT7_bdIbzSib4BSuOwBFhg&s"
+```
+
+Specify custom ASCII art width.
+
+```
+goskii -p ./example.png -w 250
+```
+
+Show available character sets
+
+```
+goskii -s
+```
+
+Use a specific character set
+
+```
+goskii -p ./example.png -c 10
+```

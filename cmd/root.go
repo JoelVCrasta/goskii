@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,7 +47,6 @@ var rootCmd = &cobra.Command{
 		}
 
 		if !checkFilePath(cmd, &cmdFlags.Path) && !checkRender(cmd, &cmdFlags.Render) {
-			cmd.Help()
 			os.Exit(1)
 		}
 
@@ -91,7 +92,7 @@ func GetCommands() Command {
 func checkExtension(path string) bool {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
-	case ".jpg", ".jpeg", ".png", ".webp", ".tiff", ".bmp":
+	case ".jpg", ".jpeg", ".png", ".webp", ".tiff", ".bmp", ".gif":
 		return true
 	default:
 		return false
@@ -102,6 +103,29 @@ func checkExtension(path string) bool {
 func checkFilePath(cmd *cobra.Command, path *string) bool {
 	if *path == "" {
 		return false
+	}
+
+	if strings.HasPrefix(*path, "http") {
+		_, err := url.ParseRequestURI(*path)
+		if err != nil {
+			cmd.PrintErrf("The URL \"%s\" is not valid.\n", *path)
+			return false
+		}
+
+		res, err := http.Head(*path)
+		if err != nil {
+			cmd.PrintErrf("Error fetching the URL \"%s\": %v\n", *path, err)
+			return false
+		}
+		defer res.Body.Close()
+
+		contentType := res.Header.Get("Content-Type")
+		if !strings.HasPrefix(contentType, "image/") {
+			cmd.PrintErrf("The URL \"%s\" does not point to an image.\n", *path)
+			return false
+		}
+		
+		return true
 	}
 
 	if _, err := os.Stat(*path); os.IsNotExist(err) {
@@ -166,7 +190,7 @@ func checkRender(cmd *cobra.Command, path *string) bool {
 	return true
 }
 
-// Checks whether the size is between 0 and 500.
+// Checks whether the size is between 1 and 500.
 func checkSize(cmd *cobra.Command, size *int) bool {
 	if *size < MinSize || *size > MaxSize {
 		cmd.PrintErrf("The size should be between %d and %d.", MinSize+1, MaxSize)

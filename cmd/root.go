@@ -19,7 +19,7 @@ const (
     DefaultCharset  = 1
     MinCharset      = 1
     MaxCharset      = 13
-	Version 		= "1.0"
+	Version 		= "1.1"
 )
 
 type Command struct {
@@ -54,7 +54,6 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-
 		if !checkSize(cmd, &cmdFlags.Size) {
 			os.Exit(1)
 		}
@@ -88,14 +87,21 @@ func GetCommands() Command {
 	return cmdFlags
 }
 
+// Returns the file type (image or video)
+func GetFileType() int {
+	return checkExtension(cmdFlags.Path)
+}
+
 // Checks whether the file extension is supported.
-func checkExtension(path string) bool {
+func checkExtension(path string) int {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".jpg", ".jpeg", ".png", ".webp", ".tiff", ".bmp", ".gif":
-		return true
+		return 0
+	case ".mp4", ".avi", ".mov", ".mkv", ".flv", ".webm", ".mpeg":
+		return 1
 	default:
-		return false
+		return -1
 	}
 }
 
@@ -133,7 +139,7 @@ func checkFilePath(cmd *cobra.Command, path *string) bool {
 		return false
 	}
 
-	if !checkExtension(*path) {
+	if checkExtension(*path) == -1 {
 		cmd.PrintErrf("The file extension is not supported.\n")
 		return false
 	}

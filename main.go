@@ -21,13 +21,21 @@ func main() {
 		}
 	}
 
+	ftype := cmd.GetFileType()
+
 	if (cmdFlags.Path != "") {
-		err := convertor.ImageToASCII(cmdFlags)
-		if err != nil {
-			fmt.Print(err)
+		if ftype == 0 {
+			err := convertor.ImageToASCII(cmdFlags)
+			if err != nil {
+				fmt.Print(err)
+			}
+		} else if ftype == 1 {
+			/* err := convertor.VideoToASCII(cmdFlags)
+			if err != nil {
+				fmt.Print(err)
+			} */
+		} else if (cmdFlags.Render != "") {
+			imageutils.Render(cmdFlags.Render)
 		}
-	} else if (cmdFlags.Render != "") {
-		imageutils.Render(cmdFlags.Render)
 	}
-	
 }

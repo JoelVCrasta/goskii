@@ -1,4 +1,4 @@
-package imageutils
+package utils
 
 import (
 	"image"

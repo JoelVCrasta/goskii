@@ -6,7 +6,7 @@ import (
 
 	"github.com/JoelVCrasta/goskii/cmd"
 	"github.com/JoelVCrasta/goskii/convertor"
-	"github.com/JoelVCrasta/goskii/imageutils"
+	"github.com/JoelVCrasta/goskii/utils"
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 				fmt.Print(err)
 			} */
 		} else if (cmdFlags.Render != "") {
-			imageutils.Render(cmdFlags.Render)
+			utils.Render(cmdFlags.Render)
 		}
 	}
 }

@@ -1,4 +1,4 @@
-package imageutils
+package utils
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"image"
 	_ "image/gif"
 	"image/jpeg"
-	_ "image/jpeg"
 	_ "image/png"
 	"io"
 	"net/http"

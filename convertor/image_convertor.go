@@ -5,13 +5,13 @@ import (
 
 	"github.com/JoelVCrasta/goskii/cmd"
 	"github.com/JoelVCrasta/goskii/generator"
-	"github.com/JoelVCrasta/goskii/imageutils"
+	"github.com/JoelVCrasta/goskii/utils"
 )
 
 // Converts the Non Alpha image to ASCII.
-func imageRGB(imageData *imageutils.ImageData, width int, height, charset int) string {
-	imageGray := imageutils.Grayscale(imageData.Image)
-	resizedImage := imageutils.ResizeGray(imageGray, width, height)
+func imageRGB(imageData *utils.ImageData, width int, height, charset int) string {
+	imageGray := utils.Grayscale(imageData.Image)
+	resizedImage := utils.ResizeGray(imageGray, width, height)
 
 	ascii := generator.GenerateASCII(resizedImage, width, height, charset - 1)
 
@@ -19,10 +19,10 @@ func imageRGB(imageData *imageutils.ImageData, width int, height, charset int) s
 }
 
 // Converts the Alpha image to ASCII. This is for PNG images.
-func imageRGBA(imageData *imageutils.ImageData, width int, height, charset int) string {
-	imageGray, alpha := imageutils.GrayscaleAlpha(imageData.Image)
-	resizedImage := imageutils.ResizeGray(imageGray, width, height)
-	alpha = imageutils.ResizeAlpha(alpha, imageData.Width, imageData.Height, width, height)
+func imageRGBA(imageData *utils.ImageData, width int, height, charset int) string {
+	imageGray, alpha := utils.GrayscaleAlpha(imageData.Image)
+	resizedImage := utils.ResizeGray(imageGray, width, height)
+	alpha = utils.ResizeAlpha(alpha, imageData.Width, imageData.Height, width, height)
 
 	ascii := generator.GenerateASCIIAlpha(resizedImage, alpha, width, height, charset)
 	
@@ -33,17 +33,17 @@ func imageRGBA(imageData *imageutils.ImageData, width int, height, charset int) 
 func ImageToASCII(
 	flags cmd.Command,
 ) error {
-	imageData, err := imageutils.LoadImage(flags.Path)
+	imageData, err := utils.LoadImage(flags.Path)
 	if err != nil {
 		return fmt.Errorf("load error: %v", err)
 	}
 
-	width, height, err := imageutils.CalculateNewBounds(imageData.Width, imageData.Height, flags.Size)
+	width, height, err := utils.CalculateNewBounds(imageData.Width, imageData.Height, flags.Size)
 	if  err != nil {
 		return fmt.Errorf("bounds error: %v", err)
 	}
 
-	termW, termH, err := imageutils.GetTerminalSize()
+	termW, termH, err := utils.GetTerminalSize()
 	if err != nil {
 		return fmt.Errorf("terminal size error: %v", err)
 	}
@@ -66,7 +66,7 @@ func ImageToASCII(
 	}
 
 	if flags.Output != "" {
-		imageutils.SaveToTextFile(ascii, flags.Output, imageData.FileName)
+		utils.SaveToTextFile(ascii, flags.Output, imageData.FileName)
 	}
 
 	return nil

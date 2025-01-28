@@ -30,10 +30,10 @@ func main() {
 				fmt.Print(err)
 			}
 		} else if ftype == 1 {
-			/* err := convertor.VideoToASCII(cmdFlags)
+			err := convertor.VideoToASCII(cmdFlags)
 			if err != nil {
 				fmt.Print(err)
-			} */
+			}
 		} else if (cmdFlags.Render != "") {
 			utils.Render(cmdFlags.Render)
 		}

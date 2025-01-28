@@ -35,7 +35,6 @@ func VideoToASCII(
 	}
 
 	var builder strings.Builder
-	totalFrames := len(videoData.Video)
 
 	bar := progressbar.NewOptions(len(videoData.Video),
 		progressbar.OptionSetPredictTime(false),	
@@ -49,7 +48,7 @@ func VideoToASCII(
 		builder.WriteString(asciiFrame)
 		builder.WriteString("\n\n")
 
-		bar.Describe(fmt.Sprintf("%d/%d frame(s)", i+1, totalFrames))
+		bar.Describe(fmt.Sprintf("%d/%d frame(s)", i+1, videoData.TotalFrames))
 		bar.Add(1)
 	}
 	bar.Clear()

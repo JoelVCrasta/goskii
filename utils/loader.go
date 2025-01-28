@@ -20,21 +20,22 @@ import (
 )
 
 type ImageData struct {
-	Path      string
-	Image     image.Image
-	Width     int
-	Height    int
-	FileName  string
-	Extension string
+	Path      	string
+	Image     	image.Image
+	Width     	int
+	Height    	int
+	FileName  	string
+	Extension 	string
 }
 
 type VideoData struct {
-	Path      string
-	Video  	  []image.Image
-	Width	  int
-	Height	  int
-	FileName  string
-	Extension string
+	Path      	string
+	Video  	  	[]image.Image
+	TotalFrames int
+	Width	  	int
+	Height	  	int
+	FileName  	string
+	Extension 	string
 	
 }
 
@@ -152,6 +153,7 @@ func LoadVideo(path string) (*VideoData, error) {
 	return &VideoData{
 		Path: path,
 		Video: frames,
+		TotalFrames: len(frames),
 		Width: frames[0].Bounds().Dx(),
 		Height: frames[0].Bounds().Dy(),
 		FileName: strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)),

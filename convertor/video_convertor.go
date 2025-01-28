@@ -2,7 +2,9 @@ package convertor
 
 import (
 	"fmt"
+	"image"
 	"strings"
+	"sync"
 
 	"github.com/JoelVCrasta/goskii/cmd"
 	"github.com/JoelVCrasta/goskii/generator"
@@ -35,21 +37,40 @@ func VideoToASCII(
 	}
 
 	var builder strings.Builder
+	asciiFrames := make(chan string, videoData.TotalFrames)
+	var wg sync.WaitGroup
 
-	bar := progressbar.NewOptions(len(videoData.Video),
+	// Progress Bar
+	bar := progressbar.NewOptions(
+		videoData.TotalFrames,
 		progressbar.OptionSetPredictTime(false),	
 	)
 
 	for i, frame := range videoData.Video {
-		frameGray := utils.Grayscale(frame)
-		resizedFrame := utils.ResizeGray(frameGray, width, height)
+		wg.Add(1)
 
-		asciiFrame := generator.GenerateASCII(resizedFrame, width, height, flags.Charset - 1)
+		go func(frame image.Image) {
+			defer wg.Done()
+
+			frameGray := utils.Grayscale(frame)
+			resizedFrame := utils.ResizeGray(frameGray, width, height)
+			asciiFrame := generator.GenerateASCII(resizedFrame, width, height, flags.Charset - 1)
+
+			asciiFrames <- asciiFrame
+
+			bar.Describe(fmt.Sprintf("%d/%d frame(s)", i+1, videoData.TotalFrames))
+			_ = bar.Add(1)
+		}(frame)
+	}
+
+	go func() {
+		wg.Wait()
+		close(asciiFrames)
+	}()
+
+	for asciiFrame := range asciiFrames {
 		builder.WriteString(asciiFrame)
 		builder.WriteString("\n\n")
-
-		bar.Describe(fmt.Sprintf("%d/%d frame(s)", i+1, videoData.TotalFrames))
-		bar.Add(1)
 	}
 	bar.Clear()
 

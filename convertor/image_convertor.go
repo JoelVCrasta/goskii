@@ -50,12 +50,12 @@ func ImageToASCII(
 
 	shouldPrint := width > termW || height > termH
 	if shouldPrint && flags.Output == "" {
-		fmt.Println("ascii art is too large to fit in the terminal, use -o flag to save to a file")
+		fmt.Println("ascii art is too large to fit in the terminal, increase the terminal size or use -o flag to save to a file")
 	}
 
 
 	var ascii string
-	if imageData.Extension == "png" {
+	if imageData.Extension == ".png" {
 		ascii = imageRGBA(imageData, width, height, flags.Charset)
 	} else {
 		ascii = imageRGB(imageData, width, height, flags.Charset)

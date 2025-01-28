@@ -5,6 +5,7 @@ import (
 	"image"
 	"strings"
 	"sync"
+	"unsafe"
 
 	"github.com/JoelVCrasta/goskii/cmd"
 	"github.com/JoelVCrasta/goskii/generator"
@@ -36,8 +37,16 @@ func VideoToASCII(
 		fmt.Println("ascii art is too large to fit in the terminal, increase the terminal size or use -o flag to save to a file")
 	}
 
+	totalSize := 0
+    for _, frame := range videoData.Video {
+        totalSize += int(unsafe.Sizeof(frame)) + frame.Bounds().Dx()*frame.Bounds().Dy()*4 // Assuming 4 bytes per pixel (RGBA)
+    }
+    sizeInMB := float64(totalSize) / (1024 * 1024)
+    fmt.Printf("Total size of video frames: %d bytes (%.2f MB)\n", totalSize, sizeInMB)
+
 	var builder strings.Builder
 	asciiFrames := make(chan string, videoData.TotalFrames)
+	progressUpdates := make(chan int, videoData.TotalFrames)
 	var wg sync.WaitGroup
 
 	// Progress Bar
@@ -46,7 +55,16 @@ func VideoToASCII(
 		progressbar.OptionSetPredictTime(false),	
 	)
 
-	for i, frame := range videoData.Video {
+	go func() {
+		completed := 0
+		for range progressUpdates {
+			completed++
+			bar.Describe(fmt.Sprintf("%d/%d frame(s)", completed, videoData.TotalFrames))
+			_ = bar.Add(1)
+		}
+	}()
+
+	for _, frame := range videoData.Video {
 		wg.Add(1)
 
 		go func(frame image.Image) {
@@ -57,15 +75,15 @@ func VideoToASCII(
 			asciiFrame := generator.GenerateASCII(resizedFrame, width, height, flags.Charset - 1)
 
 			asciiFrames <- asciiFrame
-
-			bar.Describe(fmt.Sprintf("%d/%d frame(s)", i+1, videoData.TotalFrames))
-			_ = bar.Add(1)
+			progressUpdates <- 1
+			//time.Sleep(3000 * time.Millisecond)
 		}(frame)
 	}
 
 	go func() {
 		wg.Wait()
 		close(asciiFrames)
+		close(progressUpdates)
 	}()
 
 	for asciiFrame := range asciiFrames {

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/term"
 )
@@ -63,5 +64,24 @@ func Render(path string) {
 		waitKeyPress()
 	}
 
-	fmt.Println(string(content))
+	checkVideo := strings.Split(string(content), "\n\n")
+	if len(checkVideo) > 1 {
+		RenderVideo(string(content))
+	} else {
+		fmt.Print(string(content))
+	}
+}
+
+func RenderVideo(ascii string) {
+	frames := strings.Split(ascii, "\n\n")
+	frameDelay := time.Second / 12
+	ClearTerminal()
+
+	for _, frame := range frames {
+		fmt.Print("\033[H")
+		fmt.Print(frame)
+		time.Sleep(frameDelay)
+	}
+
+	ClearTerminal()
 }

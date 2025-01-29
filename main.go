@@ -34,8 +34,8 @@ func main() {
 			if err != nil {
 				fmt.Print(err)
 			}
-		} else if (cmdFlags.Render != "") {
-			utils.Render(cmdFlags.Render)
 		}
+	} else if (cmdFlags.Render != "") {
+		utils.Render(cmdFlags.Render)
 	}
 }

@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -30,55 +29,11 @@ type ImageData struct {
 
 type VideoData struct {
 	Path      	string
-	Video  	  	[]image.Image
-	TotalFrames int
+	Reader 		*io.PipeReader
 	Width	  	int
 	Height	  	int
 	FileName  	string
 	Extension 	string
-	
-}
-
-// decodeMJPEGStream reads an MJPEG stream from the reader which is read from ffmpeg output and decodes it into a slice of images.
-func decodeMJPEGStream(reader io.Reader) ([]image.Image, error) {
-	var frames []image.Image
-	frameBuffer := bytes.Buffer{}
-	buf := make([]byte, 4096)
-
-	for {
-		n, err := reader.Read(buf)
-		if n > 0 {
-			frameBuffer.Write(buf[:n])
-
-			data := frameBuffer.Bytes()
-			startIdx := bytes.Index(data, []byte{0xFF, 0xD8}) // SOI marker
-			endIdx := bytes.Index(data, []byte{0xFF, 0xD9})   // EOI marker
-
-			if startIdx != -1 && endIdx != -1 && endIdx > startIdx {
-				jpegData := data[startIdx : endIdx+2]
-
-				// Decode the JPEG frame
-				img, err := jpeg.Decode(bytes.NewReader(jpegData))
-				if err != nil {
-					return nil, fmt.Errorf("failed to decode JPEG frame: %w", err)
-				}
-
-				frames = append(frames, img)
-
-				// Remove processed frame data from the buffer
-				frameBuffer = *bytes.NewBuffer(data[endIdx+2:])
-			}
-		}
-
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("error reading MJPEG stream: %w", err)
-		}
-	}
-
-	return frames, nil
 }
 
 func LoadImage(path string) (*ImageData, error) {
@@ -123,10 +78,9 @@ func LoadImage(path string) (*ImageData, error) {
 	}, nil
 }
 
+// TODO: Support for URL videos
 func LoadVideo(path string) (*VideoData, error) {
 	reader, writer := io.Pipe()
-
-	var frames []image.Image
 
 	go func() {
 		defer writer.Close()
@@ -136,7 +90,7 @@ func LoadVideo(path string) (*VideoData, error) {
 				"format": "image2pipe",
 				"vcodec": "mjpeg",
 				"r": "12",
-			},
+			},	
 		).WithOutput(writer).Run()
 
 		if err != nil {
@@ -144,20 +98,17 @@ func LoadVideo(path string) (*VideoData, error) {
 		}
 	}()
 
-	frames, err := decodeMJPEGStream(reader)
-
+	img, err := jpeg.Decode(reader)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding MJPEG stream: %v", err)
+		return nil, fmt.Errorf("error decoding image: %v", err)
 	}
 
 	return &VideoData{
 		Path: path,
-		Video: frames,
-		TotalFrames: len(frames),
-		Width: frames[0].Bounds().Dx(),
-		Height: frames[0].Bounds().Dy(),
+		Reader: reader,
+		Width: img.Bounds().Dx(),
+		Height: img.Bounds().Dy(),
 		FileName: strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)),
 		Extension: filepath.Ext(path),
 	}, nil
-
 }

@@ -45,7 +45,7 @@ func CalculateNewBounds(width, height, size int) (int, int, error) {
 		}
 		
 		newWidth := int(float64(width) * scalingFactor * heightScale)
-		newHeight := int(float64(height) * scalingFactor)
+		newHeight := int(float64(height) * scalingFactor) - 1
 
 		return newWidth, newHeight, nil
 	} else {
@@ -54,20 +54,15 @@ func CalculateNewBounds(width, height, size int) (int, int, error) {
 
 		return newWidth, newHeight, nil
 	}
-
 }
 
-
+// Clears the terminal screen based on the OS.
 func ClearTerminal() {
-	var cmd *exec.Cmd
-
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/c", "cls")
-	default:
-		cmd = exec.Command("clear")
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("cmd", "/c", "cls")
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	} else {
+		fmt.Print("\033[H\033[2J")
 	}
-
-	cmd.Stdout = os.Stdout
-	cmd.Run()
 }

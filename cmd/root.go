@@ -65,7 +65,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if !checkFps(cmd, &cmdFlags.Fps, &cmdFlags.Path) {
+		if !checkFps(cmd, &cmdFlags.Fps, &cmdFlags.Path, &cmdFlags.Render) {
 			os.Exit(1)
 		}
 	},
@@ -108,6 +108,8 @@ func checkExtension(path string) int {
 		return 0
 	case ".mp4", ".avi", ".mov", ".mkv", ".flv", ".webm", ".mpeg":
 		return 1
+	case ".txt":
+		return 2
 	default:
 		return -1
 	}
@@ -224,19 +226,15 @@ func checkCharset(cmd *cobra.Command, charset *int) bool {
 	return true
 }
 
-func checkFps(cmd *cobra.Command, fps *int, path *string) bool {
-	if *path == "" {
+func checkFps(cmd *cobra.Command, fps *int, path *string, render *string) bool {
+	if *path == "" && *render == "" {
 		cmd.PrintErrf("No video path provided.\n")
 		return false
 	}
 
-	if checkExtension(*path) != 1 {
+	if checkExtension(*path) != 1 && checkExtension(*render) != 2 {
 		cmd.PrintErrf("Not a video file.\n")
 		return false
-	}
-
-	if *fps == 0 {
-		return true
 	}
 
 	if *fps < MinFps || *fps > MaxFps {

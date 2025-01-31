@@ -19,6 +19,8 @@ const (
     DefaultCharset  = 1
     MinCharset      = 1
     MaxCharset      = 13
+	MinFps			= 1
+	MaxFps			= 24
 	Version 		= "1.1"
 )
 
@@ -28,6 +30,7 @@ type Command struct {
 	Render  		string
 	Size  			int
 	Charset 		int
+	Fps 			int
 }
 var cmdFlags Command
 
@@ -61,6 +64,10 @@ var rootCmd = &cobra.Command{
 		if !checkCharset(cmd, &cmdFlags.Charset) {
 			os.Exit(1)
 		}
+
+		if !checkFps(cmd, &cmdFlags.Fps, &cmdFlags.Path) {
+			os.Exit(1)
+		}
 	},
 }
 
@@ -70,6 +77,7 @@ func Execute() {
 	rootCmd.Flags().StringVarP(&cmdFlags.Render, "render", "r", "", "Render the contents of the ASCII art file.")
     rootCmd.Flags().IntVarP(&cmdFlags.Size, "width", "w", DefaultSize, fmt.Sprintf("Width of the ASCII art (%d - %d). Default adjusts to terminal size.", MinSize, MaxSize))
     rootCmd.Flags().IntVarP(&cmdFlags.Charset, "charset", "c", DefaultCharset, fmt.Sprintf("Character set to use (%d - %d).", MinCharset, MaxCharset))
+	rootCmd.Flags().IntVarP(&cmdFlags.Fps, "fps", "f", 0, fmt.Sprintf("Video FPS (%d - %d). Default is 0.", MinFps, MaxFps))
     rootCmd.Flags().BoolP("showset", "s", false, "Display all character sets.")
 	rootCmd.Flags().BoolP("version", "v", false, "Verion of goskii.")
 	rootCmd.MarkPersistentFlagRequired("path")
@@ -210,6 +218,29 @@ func checkSize(cmd *cobra.Command, size *int) bool {
 func checkCharset(cmd *cobra.Command, charset *int) bool {
 	if *charset < MinCharset || *charset > MaxCharset {
 		cmd.PrintErrf("The charset should be between %d and %d.\n", MinCharset, MaxCharset)
+		return false
+	}
+
+	return true
+}
+
+func checkFps(cmd *cobra.Command, fps *int, path *string) bool {
+	if *path == "" {
+		cmd.PrintErrf("No video path provided.\n")
+		return false
+	}
+
+	if checkExtension(*path) != 1 {
+		cmd.PrintErrf("Not a video file.\n")
+		return false
+	}
+
+	if *fps == 0 {
+		return true
+	}
+
+	if *fps < MinFps || *fps > MaxFps {
+		cmd.PrintErrf("The FPS should be between %d and %d.\n", MinFps, MaxFps)
 		return false
 	}
 

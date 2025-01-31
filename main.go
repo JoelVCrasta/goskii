@@ -36,6 +36,6 @@ func main() {
 			}
 		}
 	} else if (cmdFlags.Render != "") {
-		utils.Render(cmdFlags.Render)
+		utils.Render(cmdFlags.Render, cmdFlags.Fps)
 	}
 }

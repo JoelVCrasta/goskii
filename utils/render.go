@@ -34,7 +34,7 @@ func waitKeyPress() {
 		}
 }
 
-func Render(path string) {
+func Render(path string, fps int) {
 	file, err := os.Open(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -66,15 +66,23 @@ func Render(path string) {
 
 	checkVideo := strings.Split(string(content), "\n\n")
 	if len(checkVideo) > 1 {
-		RenderVideo(string(content))
+		RenderVideo(string(content), fps)
 	} else {
 		fmt.Print(string(content))
 	}
 }
 
-func RenderVideo(ascii string) {
+func RenderVideo(ascii string, fps int) {
 	frames := strings.Split(ascii, "\n\n")
-	frameDelay := time.Second / 12
+
+	var finalFps time.Duration
+	if fps == 0 {
+		finalFps = time.Duration(12)
+	} else {
+		finalFps = time.Duration(fps)
+	}
+	frameDelay := time.Second / finalFps
+
 	ClearTerminal()
 
 	for _, frame := range frames {

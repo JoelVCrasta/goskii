@@ -140,7 +140,7 @@ func VideoToASCII(flags cmd.Command) error {
 	}
 
 	if !shouldPrint && ascii != "" {
-		utils.RenderVideo(ascii)
+		utils.RenderVideo(ascii, flags.Fps)
 	}
 
 	if flags.Output != "" {

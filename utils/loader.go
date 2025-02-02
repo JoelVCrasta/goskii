@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kkdai/youtube/v2"
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
@@ -34,6 +35,21 @@ type VideoData struct {
 	Height	  	int
 	FileName  	string
 	Extension 	string
+}
+
+// Returns the format with the specified quality
+func findFormat(formats youtube.FormatList, quality string) *youtube.Format {
+	for i := range formats {
+		if strings.Contains(formats[i].QualityLabel, quality) {
+			return &formats[i]
+		}
+	}
+		
+	if len(formats) > 0 {
+		return &formats[0]
+	}
+
+	return nil
 }
 
 func LoadImage(path string) (*ImageData, error) {
@@ -80,35 +96,91 @@ func LoadImage(path string) (*ImageData, error) {
 
 // TODO: Support for URL videos
 func LoadVideo(path string) (*VideoData, error) {
-	reader, writer := io.Pipe()
+    reader, writer := io.Pipe()
+    defer func() {
+        if reader != nil {
+            reader.Close()
+        }
+    }()
 
-	go func() {
-		defer writer.Close()
+    errChan := make(chan error, 1)
 
-		err := ffmpeg.Input(path).Output(
-			"pipe:1", ffmpeg.KwArgs{
-				"format": "image2pipe",
-				"vcodec": "mjpeg",
-				"r": "12",
-			},	
-		).WithOutput(writer).Run()
+    if strings.HasPrefix(path, "http") {
+        if strings.Contains(path, "youtube.com") || strings.Contains(path, "youtu.be") {
+            client := youtube.Client{}
+            fetchQuality := "360p"
 
-		if err != nil {
-			fmt.Printf("FFmpeg error: %v\n", err)
-		}
-	}()
+            video, err := client.GetVideo(path)
+            if err != nil {
+                return nil, fmt.Errorf("failed to fetch YouTube video: %v", err)
+            }
 
-	img, err := jpeg.Decode(reader)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding image: %v", err)
-	}
+            fmt.Printf("Downloading YouTube video: %s\n", video.Title)
 
-	return &VideoData{
-		Path: path,
-		Reader: reader,
-		Width: img.Bounds().Dx(),
-		Height: img.Bounds().Dy(),
-		FileName: strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)),
-		Extension: filepath.Ext(path),
-	}, nil
+            format := findFormat(video.Formats, fetchQuality)
+            if format == nil {
+                return nil, fmt.Errorf("no format found for quality '%s'", fetchQuality)
+            }
+
+            stream, _, err := client.GetStream(video, format)
+            if err != nil {
+                return nil, fmt.Errorf("failed to fetch video stream: %v", err)
+            }
+
+            go func() {
+                defer writer.Close()
+                err := ffmpeg.Input("pipe:0").Output(
+                    "pipe:1", ffmpeg.KwArgs{
+                        "format": "image2pipe",
+                        "vcodec": "mjpeg",
+                        "r":      "12",
+                    },
+                ).WithInput(stream).WithOutput(writer).Run()
+                if err != nil {
+                    errChan <- fmt.Errorf("ffmpeg error: %v", err)
+                    return
+                }
+                errChan <- nil
+            }()
+        }
+    } else {
+        go func() {
+            defer writer.Close()
+            err := ffmpeg.Input(path).Output(
+                "pipe:1", ffmpeg.KwArgs{
+                    "format": "image2pipe",
+                    "vcodec": "mjpeg",
+                    "r":      "12",
+                },
+            ).WithOutput(writer).Run()
+            if err != nil {
+                errChan <- fmt.Errorf("ffmpeg error: %v", err)
+                return
+            }
+            errChan <- nil
+        }()
+    }
+
+    // Wait for FFmpeg to start and check for errors
+    select {
+    case err := <-errChan:
+        if err != nil {
+            return nil, err
+        }
+    default:
+    }
+
+    img, err := jpeg.Decode(reader)
+    if err != nil {
+        return nil, fmt.Errorf("error decoding image: %v", err)
+    }
+
+    return &VideoData{
+        Path:      path,
+        Reader:    reader,
+        Width:     img.Bounds().Dx(),
+        Height:    img.Bounds().Dy(),
+        FileName:  strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)),
+        Extension: filepath.Ext(path),
+    }, nil
 }

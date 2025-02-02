@@ -6,9 +6,11 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/JoelVCrasta/goskii/generator"
+	"github.com/kkdai/youtube/v2"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +23,7 @@ const (
     MaxCharset      = 13
 	MinFps			= 1
 	MaxFps			= 24
+	DefaultFps		= 12
 	Version 		= "1.1"
 )
 
@@ -77,7 +80,7 @@ func Execute() {
 	rootCmd.Flags().StringVarP(&cmdFlags.Render, "render", "r", "", "Render the contents of the ASCII art file.")
     rootCmd.Flags().IntVarP(&cmdFlags.Size, "width", "w", DefaultSize, fmt.Sprintf("Width of the ASCII art (%d - %d). Default adjusts to terminal size.", MinSize, MaxSize))
     rootCmd.Flags().IntVarP(&cmdFlags.Charset, "charset", "c", DefaultCharset, fmt.Sprintf("Character set to use (%d - %d).", MinCharset, MaxCharset))
-	rootCmd.Flags().IntVarP(&cmdFlags.Fps, "fps", "f", 0, fmt.Sprintf("Video FPS (%d - %d). Default is 0.", MinFps, MaxFps))
+	rootCmd.Flags().IntVarP(&cmdFlags.Fps, "fps", "f", 12, fmt.Sprintf("Video FPS (%d - %d). Default is %d.", MinFps, MaxFps, DefaultFps))
     rootCmd.Flags().BoolP("showset", "s", false, "Display all character sets.")
 	rootCmd.Flags().BoolP("version", "v", false, "Verion of goskii.")
 	rootCmd.MarkPersistentFlagRequired("path")
@@ -103,6 +106,11 @@ func GetFileType() int {
 // Checks whether the file extension is supported.
 func checkExtension(path string) int {
 	ext := strings.ToLower(filepath.Ext(path))
+	youtubeRegex := regexp.MustCompile(`https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/`)
+	if youtubeRegex.MatchString(path) {
+		return 3
+	}
+
 	switch ext {
 	case ".jpg", ".jpeg", ".png", ".webp", ".tiff", ".bmp", ".gif":
 		return 0
@@ -121,6 +129,7 @@ func checkFilePath(cmd *cobra.Command, path *string) bool {
 		return false
 	}
 
+	// Handle HTTP/HTTPS URLs
 	if strings.HasPrefix(*path, "http") {
 		_, err := url.ParseRequestURI(*path)
 		if err != nil {
@@ -128,6 +137,20 @@ func checkFilePath(cmd *cobra.Command, path *string) bool {
 			return false
 		}
 
+		// Check if the URL is a YouTube video
+		if strings.Contains(*path, "youtube.com") || strings.Contains(*path, "youtu.be") {
+			client := youtube.Client{}
+
+			_, err := client.GetVideo(*path)
+			if err != nil {
+				cmd.PrintErrf("Error fetching the YouTube video metadata: %v\n", err)
+				return false
+			}
+
+			return true
+		}
+
+		// Handle non-YouTube URLs (e.g., images or videos)
 		res, err := http.Head(*path)
 		if err != nil {
 			cmd.PrintErrf("Error fetching the URL \"%s\": %v\n", *path, err)
@@ -136,16 +159,17 @@ func checkFilePath(cmd *cobra.Command, path *string) bool {
 		defer res.Body.Close()
 
 		contentType := res.Header.Get("Content-Type")
-		if !strings.HasPrefix(contentType, "image/") {
-			cmd.PrintErrf("The URL \"%s\" does not point to an image.\n", *path)
+		if !strings.HasPrefix(contentType, "image/") && !strings.HasPrefix(contentType, "video/") {
+			cmd.PrintErrf("The URL \"%s\" does not point to an image or a video.\n", *path)
 			return false
 		}
-		
+
 		return true
 	}
 
+	// Handle local file paths
 	if _, err := os.Stat(*path); os.IsNotExist(err) {
-		cmd.PrintErrf("The path or file \"%s\" does not exist or not valid.\n", *path)
+		cmd.PrintErrf("The path or file \"%s\" does not exist or is not valid.\n", *path)
 		return false
 	}
 
@@ -184,6 +208,7 @@ func checkOutputPath(cmd *cobra.Command, path *string) bool {
         cmd.PrintErrf("The output path \"%s\" is not a directory.\n", *path)
         return false
     }
+
 
     return true
 }
@@ -232,7 +257,7 @@ func checkFps(cmd *cobra.Command, fps *int, path *string, render *string) bool {
 		return false
 	}
 
-	if checkExtension(*path) != 1 && checkExtension(*render) != 2 {
+	if checkExtension(*path) != 1 && checkExtension(*render) != 2 && strings.Contains(*path, "youtube.com") {
 		cmd.PrintErrf("Not a video file.\n")
 		return false
 	}

@@ -96,14 +96,11 @@ func LoadImage(path string) (*ImageData, error) {
 
 // TODO: Support for URL videos
 func LoadVideo(path string) (*VideoData, error) {
-    reader, writer := io.Pipe()
-    defer func() {
-        if reader != nil {
-            reader.Close()
-        }
-    }()
-
-    errChan := make(chan error, 1)
+    var (
+        reader, writer  = io.Pipe()
+        width, height   = 0, 0
+        errChan         = make(chan error, 1)
+    )
 
     if strings.HasPrefix(path, "http") {
         if strings.Contains(path, "youtube.com") || strings.Contains(path, "youtu.be") {
@@ -121,6 +118,8 @@ func LoadVideo(path string) (*VideoData, error) {
             if format == nil {
                 return nil, fmt.Errorf("no format found for quality '%s'", fetchQuality)
             }
+            height, width = format.Height, format.Width
+
 
             stream, _, err := client.GetStream(video, format)
             if err != nil {
@@ -128,6 +127,7 @@ func LoadVideo(path string) (*VideoData, error) {
             }
 
             go func() {
+                fmt.Println("Starting FFmpeg")
                 defer writer.Close()
                 err := ffmpeg.Input("pipe:0").Output(
                     "pipe:1", ffmpeg.KwArgs{
@@ -135,12 +135,13 @@ func LoadVideo(path string) (*VideoData, error) {
                         "vcodec": "mjpeg",
                         "r":      "12",
                     },
-                ).WithInput(stream).WithOutput(writer).Run()
+                ).WithInput(stream).WithOutput(writer).ErrorToStdOut().Run()
                 if err != nil {
                     errChan <- fmt.Errorf("ffmpeg error: %v", err)
                     return
                 }
                 errChan <- nil
+                fmt.Println("FFmpeg finished")
             }()
         }
     } else {
@@ -159,6 +160,12 @@ func LoadVideo(path string) (*VideoData, error) {
             }
             errChan <- nil
         }()
+
+        img, err := jpeg.Decode(reader)
+        if err != nil {
+            return nil, fmt.Errorf("error decoding image: %v", err)
+        }
+        width, height = img.Bounds().Dx(), img.Bounds().Dy()
     }
 
     // Wait for FFmpeg to start and check for errors
@@ -170,16 +177,12 @@ func LoadVideo(path string) (*VideoData, error) {
     default:
     }
 
-    img, err := jpeg.Decode(reader)
-    if err != nil {
-        return nil, fmt.Errorf("error decoding image: %v", err)
-    }
 
     return &VideoData{
         Path:      path,
         Reader:    reader,
-        Width:     img.Bounds().Dx(),
-        Height:    img.Bounds().Dy(),
+        Width:     width,
+        Height:    height,
         FileName:  strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)),
         Extension: filepath.Ext(path),
     }, nil

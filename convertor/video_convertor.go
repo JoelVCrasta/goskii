@@ -118,6 +118,7 @@ func VideoToASCII(flags cmd.Command) error {
 	if err != nil {
 		return fmt.Errorf("load error: %v", err)
 	}
+	defer videoData.Reader.Close()
 
 	width, height, err := utils.CalculateNewBounds(videoData.Width, videoData.Height, flags.Size)
 	if  err != nil {

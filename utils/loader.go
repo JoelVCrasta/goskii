@@ -104,45 +104,29 @@ func LoadVideo(path string) (*VideoData, error) {
 
     if strings.HasPrefix(path, "http") {
         if strings.Contains(path, "youtube.com") || strings.Contains(path, "youtu.be") {
-            client := youtube.Client{}
-            fetchQuality := "360p"
-
-            video, err := client.GetVideo(path)
-            if err != nil {
-                return nil, fmt.Errorf("failed to fetch YouTube video: %v", err)
-            }
-
-            fmt.Printf("Downloading YouTube video: %s\n", video.Title)
-
-            format := findFormat(video.Formats, fetchQuality)
-            if format == nil {
-                return nil, fmt.Errorf("no format found for quality '%s'", fetchQuality)
-            }
-            height, width = format.Height, format.Width
-
-
-            stream, _, err := client.GetStream(video, format)
-            if err != nil {
-                return nil, fmt.Errorf("failed to fetch video stream: %v", err)
-            }
-
+            // TODO: Implement YouTube video support
+        } else {
             go func() {
-                fmt.Println("Starting FFmpeg")
                 defer writer.Close()
-                err := ffmpeg.Input("pipe:0").Output(
+                err := ffmpeg.Input(path).Output(
                     "pipe:1", ffmpeg.KwArgs{
                         "format": "image2pipe",
                         "vcodec": "mjpeg",
                         "r":      "12",
                     },
-                ).WithInput(stream).WithOutput(writer).ErrorToStdOut().Run()
+                ).WithOutput(writer).Run()
                 if err != nil {
                     errChan <- fmt.Errorf("ffmpeg error: %v", err)
                     return
                 }
                 errChan <- nil
-                fmt.Println("FFmpeg finished")
             }()
+
+            img, err := jpeg.Decode(reader)
+            if err != nil {
+                return nil, fmt.Errorf("error decoding image: %v", err)
+            }
+            width, height = img.Bounds().Dx(), img.Bounds().Dy()
         }
     } else {
         go func() {

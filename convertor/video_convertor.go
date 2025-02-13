@@ -106,8 +106,6 @@ func decodeAndProcessStream(videoData *utils.VideoData, charset, width, height i
 		processFrames(frames, &builder, charset, width, height, &frameCount)
 	}
 
-	fmt.Print(frameCount)
-
 	return builder.String(), nil
 }
 

@@ -1,10 +1,10 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"image"
 	_ "image/gif"
-	"image/jpeg"
 	_ "image/png"
 	"io"
 	"net/http"
@@ -52,6 +52,7 @@ func findFormat(formats youtube.FormatList, quality string) *youtube.Format {
 	return nil
 }
 
+// LoadImage loads an image from the specified path (local or http) and returns an ImageData struct containing the image and metadata.
 func LoadImage(path string) (*ImageData, error) {
 	var reader io.Reader
 
@@ -94,7 +95,7 @@ func LoadImage(path string) (*ImageData, error) {
 	}, nil
 }
 
-// TODO: Support for URL videos
+// LoadVideo loads a video from the specified path (local, http or youtube) and returns a VideoData struct containing the video stream and metadata.
 func LoadVideo(path string) (*VideoData, error) {
     var (
         reader, writer  = io.Pipe()
@@ -102,65 +103,84 @@ func LoadVideo(path string) (*VideoData, error) {
         errChan         = make(chan error, 1)
     )
 
-    if strings.HasPrefix(path, "http") {
-        if strings.Contains(path, "youtube.com") || strings.Contains(path, "youtu.be") {
-            // TODO: Implement YouTube video support
-        } else {
-            go func() {
-                defer writer.Close()
-                err := ffmpeg.Input(path).Output(
-                    "pipe:1", ffmpeg.KwArgs{
-                        "format": "image2pipe",
-                        "vcodec": "mjpeg",
-                        "r":      "12",
-                    },
-                ).WithOutput(writer).Run()
-                if err != nil {
-                    errChan <- fmt.Errorf("ffmpeg error: %v", err)
-                    return
-                }
-                errChan <- nil
-            }()
+	var metadata struct {
+		Streams []struct {
+			Width  int `json:"width"`
+			Height int `json:"height"`
+		} `json:"streams"`
+	}
 
-            img, err := jpeg.Decode(reader)
-            if err != nil {
-                return nil, fmt.Errorf("error decoding image: %v", err)
-            }
-            width, height = img.Bounds().Dx(), img.Bounds().Dy()
-        }
+	if strings.Contains(path, "youtube.com") || strings.Contains(path, "youtu.be") {
+		// TODO: Implement YouTube video support
+		client := youtube.Client{}
+		fetchQuality := "360p"
+
+		video, err := client.GetVideo(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch YouTube video: %v", err)
+		}
+
+		fmt.Printf("Downloading YouTube video: %s\n", video.Title)
+
+		format := findFormat(video.Formats, fetchQuality)
+		if format == nil {
+			return nil, fmt.Errorf("no format found for quality '%s'", fetchQuality)
+		}
+		height, width = format.Height, format.Width
+
+		stream, _, err := client.GetStream(video, format)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch video stream: %v", err)
+		}
+
+		go func() {
+			fmt.Println("Starting FFmpeg")
+			defer writer.Close()
+			err := ffmpeg.Input("pipe:0").Output(
+				"pipe:1", ffmpeg.KwArgs{
+					"format": "image2pipe",
+					"vcodec": "mjpeg",
+					"r":      "12",
+				},
+			).WithInput(stream).WithOutput(writer).ErrorToStdOut().Run()
+			if err != nil {
+				errChan <- fmt.Errorf("ffmpeg error: %v", err)
+				return
+			}
+			errChan <- nil
+			fmt.Println("FFmpeg finished")
+		}()
     } else {
-        go func() {
-            defer writer.Close()
-            err := ffmpeg.Input(path).Output(
-                "pipe:1", ffmpeg.KwArgs{
-                    "format": "image2pipe",
-                    "vcodec": "mjpeg",
-                    "r":      "12",
-                },
-            ).WithOutput(writer).Run()
-            if err != nil {
-                errChan <- fmt.Errorf("ffmpeg error: %v", err)
-                return
-            }
-            errChan <- nil
-        }()
+		// Handle HTTP/HTTPS input (non-YouTube) and local file input
+		probeResult, err := ffmpeg.Probe(path)
+		if err != nil {
+			return nil, fmt.Errorf("error probing video: %v", err)
+		}
+		if err := json.Unmarshal([]byte(probeResult), &metadata); err != nil {
+			return nil, fmt.Errorf("error parsing video metadata: %v", err)
+		}
+		if len(metadata.Streams) == 0 {
+			return nil, fmt.Errorf("no video streams found")
+		}
+		width, height = metadata.Streams[0].Width, metadata.Streams[0].Height
 
-        img, err := jpeg.Decode(reader)
-        if err != nil {
-            return nil, fmt.Errorf("error decoding image: %v", err)
-        }
-        width, height = img.Bounds().Dx(), img.Bounds().Dy()
-    }
+		go func() {
+			defer writer.Close()
+			err := ffmpeg.Input(path).Output(
+				"pipe:1", ffmpeg.KwArgs{
+					"format": "image2pipe",
+					"vcodec": "mjpeg",
+					"r":      "12",
+				},
+			).WithOutput(writer).Silent(true).Run()
 
-    // Wait for FFmpeg to start and check for errors
-    select {
-    case err := <-errChan:
-        if err != nil {
-            return nil, err
-        }
-    default:
-    }
+			errChan <- err
+		}()
+	}
 
+	if err := <-errChan; err != nil {
+		return nil, err
+	}
 
     return &VideoData{
         Path:      path,

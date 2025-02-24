@@ -24,7 +24,7 @@ const (
 	MinFps			= 1
 	MaxFps			= 24
 	DefaultFps		= 12
-	Version 		= "1.1"
+	Version 		= "2.0"
 )
 
 type Command struct {
@@ -129,24 +129,18 @@ func checkFilePath(cmd *cobra.Command, path *string) bool {
 		return false
 	}
 
-	// Handle HTTP/HTTPS URLs
-	if strings.HasPrefix(*path, "http") {
-		_, err := url.ParseRequestURI(*path)
-		if err != nil {
-			cmd.PrintErrf("The URL \"%s\" is not valid.\n", *path)
-			return false
-		}
-
-		// Check if the URL is a YouTube video
-		if strings.Contains(*path, "youtube.com") || strings.Contains(*path, "youtu.be") {
+	// Check if the path is a valid URL
+	parsedURL, err := url.ParseRequestURI(*path)
+	if err == nil && (parsedURL.Scheme == "http" || parsedURL.Scheme == "https") {
+		// Handle HTTP/HTTPS URLs
+		if strings.Contains(parsedURL.Host, "youtube.com") || strings.Contains(parsedURL.Host, "youtu.be") {
+			// Check if it's a valid YouTube video
 			client := youtube.Client{}
-
 			_, err := client.GetVideo(*path)
 			if err != nil {
-				cmd.PrintErrf("Error fetching the YouTube video metadata: %v\n", err)
+				cmd.PrintErrf("Error fetching the YouTube video: %v\n", err)
 				return false
 			}
-
 			return true
 		}
 

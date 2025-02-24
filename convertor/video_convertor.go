@@ -56,13 +56,18 @@ func processFrames(frames []image.Image, builder *strings.Builder, charset, widt
 
 	5) Process the remaining frames and return the final ASCII representation.
 */
-func decodeAndProcessStream(videoData *utils.VideoData, charset, width, height int) (string, error) { 
+func decodeAndProcessStream(videoData *utils.VideoData, charset, width, height int) (string, error) {
+	const (
+		batchSize = 16
+		bufferSize = 1024
+	)
+
 	var (
-		frames 		= make([]image.Image, 0, 16) // Slice to store 16 frames
+		frames 		= make([]image.Image, 0, batchSize) // Slice to store 16 frames
 		builder	 	strings.Builder
 		frameCount 	int32
 		frameBuffer bytes.Buffer
-		buf 		= make([]byte, 1024)
+		buf 		= make([]byte, bufferSize)
 	)
 
 	for {
@@ -96,7 +101,7 @@ func decodeAndProcessStream(videoData *utils.VideoData, charset, width, height i
 			return "", fmt.Errorf("error reading MJPEG stream: %w", err)
 		}
 
-		if len(frames) == 16 {
+		if len(frames) == batchSize {
 			processFrames(frames, &builder, charset, width, height, &frameCount)
 			frames = frames[:0]
 		}
@@ -128,9 +133,9 @@ func VideoToASCII(flags cmd.Command) error {
 		return fmt.Errorf("terminal size error: %v", err)
 	}
 
-	shouldPrint := width > termW || height > termH
-	if shouldPrint && flags.Output == "" {
-		fmt.Println("ascii art is too large to fit in the terminal, increase the terminal size or use -o flag to save to a file")
+	shouldPrint := width <= termW && height <= termH
+	if !shouldPrint && flags.Output == "" {
+		fmt.Println("ASCII art is too large to fit in the terminal. Increase the terminal size or use the -o flag to save to a file.")
 	}
 
 	ascii, err := decodeAndProcessStream(videoData, flags.Charset, width, height)
@@ -138,12 +143,15 @@ func VideoToASCII(flags cmd.Command) error {
 		return fmt.Errorf("error processing stream: %v", err)
 	}
 
-	if !shouldPrint && ascii != "" {
+	if shouldPrint && ascii != "" {
 		utils.RenderVideo(ascii, flags.Fps)
 	}
 
 	if flags.Output != "" {
-		utils.SaveToTextFile(ascii, flags.Output, videoData.FileName)
+		err := utils.SaveToTextFile(ascii, flags.Output, videoData.FileName)
+		if err != nil {
+			return fmt.Errorf("error saving to file: %v", err)
+		}
 	}
 
 	return nil

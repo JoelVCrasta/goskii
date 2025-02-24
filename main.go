@@ -23,7 +23,7 @@ func main() {
 
 	ftype := cmd.GetFileType()
 
-	if (cmdFlags.Path != "") {
+	if cmdFlags.Path != "" {
 		if ftype == 0 {
 			err := convertor.ImageToASCII(cmdFlags)
 			if err != nil {
@@ -37,7 +37,7 @@ func main() {
 		} else {
 			fmt.Print("Invalid file type")
 		}
-	} else if (cmdFlags.Render != "") {
+	} else if cmdFlags.Render != "" {
 		utils.Render(cmdFlags.Render, cmdFlags.Fps)
 	}
 }

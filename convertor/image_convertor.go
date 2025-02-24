@@ -2,32 +2,33 @@ package convertor
 
 import (
 	"fmt"
+	"image"
 
 	"github.com/JoelVCrasta/goskii/cmd"
 	"github.com/JoelVCrasta/goskii/generator"
 	"github.com/JoelVCrasta/goskii/utils"
 )
 
-// Converts the Non Alpha image to ASCII.
-func imageRGB(imageData *utils.ImageData, width int, height, charset int) string {
-	imageGray := utils.Grayscale(imageData.Image)
+// Converts an image to grayscale, resizes it, and generates ASCII art.
+func convertImage(imageData *utils.ImageData, width, height, charset int, hasAlpha bool) string {
+	var imageGray *image.Gray
+	var alpha [][]uint8
+
+	if hasAlpha {
+		imageGray, alpha = utils.GrayscaleAlpha(imageData.Image)
+		alpha = utils.ResizeAlpha(alpha, imageData.Width, imageData.Height, width, height)
+	} else {
+		imageGray = utils.Grayscale(imageData.Image)
+	}
+
 	resizedImage := utils.ResizeGray(imageGray, width, height)
 
-	ascii := generator.GenerateASCII(resizedImage, width, height, charset - 1)
-
-	return ascii
+	if hasAlpha {
+		return generator.GenerateASCIIAlpha(resizedImage, alpha, width, height, charset)
+	}
+	return generator.GenerateASCII(resizedImage, width, height, charset-1)
 }
 
-// Converts the Alpha image to ASCII. This is for PNG images.
-func imageRGBA(imageData *utils.ImageData, width int, height, charset int) string {
-	imageGray, alpha := utils.GrayscaleAlpha(imageData.Image)
-	resizedImage := utils.ResizeGray(imageGray, width, height)
-	alpha = utils.ResizeAlpha(alpha, imageData.Width, imageData.Height, width, height)
-
-	ascii := generator.GenerateASCIIAlpha(resizedImage, alpha, width, height, charset)
-	
-	return ascii
-}
 
 // Converts the image to ASCII by calling the appropriate function based on the image extension.
 func ImageToASCII(
@@ -48,17 +49,17 @@ func ImageToASCII(
 		return fmt.Errorf("terminal size error: %v", err)
 	}
 
-	shouldPrint := width > termW || height > termH
-	if shouldPrint && flags.Output == "" {
-		fmt.Println("ascii art is too large to fit in the terminal, increase the terminal size or use -o flag to save to a file")
+	shouldPrint := width <= termW && height <= termH
+	if !shouldPrint && flags.Output == "" {
+		fmt.Println("ASCII art is too large to fit in the terminal. Increase the terminal size or use the -o flag to save to a file.")
 	}
 
 
 	var ascii string
 	if imageData.Extension == ".png" {
-		ascii = imageRGBA(imageData, width, height, flags.Charset)
+		ascii = convertImage(imageData, width, height, flags.Charset, true)
 	} else {
-		ascii = imageRGB(imageData, width, height, flags.Charset)
+		ascii = convertImage(imageData, width, height, flags.Charset, false)
 	}
 
 	if !shouldPrint {
@@ -66,7 +67,10 @@ func ImageToASCII(
 	}
 
 	if flags.Output != "" {
-		utils.SaveToTextFile(ascii, flags.Output, imageData.FileName)
+		err := utils.SaveToTextFile(ascii, flags.Output, imageData.FileName)
+		if err != nil {
+			return fmt.Errorf("save error: %v", err)
+		}
 	}
 
 	return nil

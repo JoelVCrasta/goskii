@@ -42,6 +42,12 @@ var rootCmd = &cobra.Command{
 	Short: "goskii is a CLI tool to convert images to ASCII art.",
 
 	Run: func(cmd *cobra.Command, args []string) {
+		if cmd.Flags().NFlag() == 0 {
+			fmt.Println("Usage: goskii [flags]")
+			fmt.Println("Type --help or -h to see a list of all options.")   
+			os.Exit(0)
+		}
+
 		if cmd.Flags().Changed("showset") {
 			showShowset()
 			os.Exit(0)

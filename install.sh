@@ -6,6 +6,11 @@ APP_NAME="goskii"
 REPO="JoelVCrasta/goskii"
 BIN_DIR="/usr/local/bin"
 
+cleanup() {
+    sudo rm -rf /tmp/ffmpeg /tmp/ffmpeg.zip
+}
+trap cleanup EXIT
+
 # Determine OS
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 
@@ -33,20 +38,33 @@ fi
 # Download dependencies
 echo "Downloading dependencies..."
 
-# Check if ffmpeg is installed
+# Check if FFmpeg is installed
 if ! command -v ffmpeg &> /dev/null; then
     echo "FFmpeg not found, downloading latest FFmpeg version..."
     FFMPEG_URL="https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+    FFMPEG_ZIP="/tmp/ffmpeg.zip"
+    FFMPEG_EXTRACT_DIR="/tmp/ffmpeg"
 
-    if ! sudo curl -sL $FFMPEG_URL -o /tmp/ffmpeg.zip; then
+    if ! sudo curl -sL $FFMPEG_URL -o $FFMPEG_ZIP; then
         echo "Failed to download FFmpeg."
         exit 1
     fi
 
-    sudo unzip -o /tmp/ffmpeg.zip -d /tmp
-    sudo cp /tmp/ffmpeg-*-essentials_build/bin/ffmpeg $BIN_DIR
-    sudo rm -rf /tmp/ffmpeg-*-essentials_build /tmp/ffmpeg.zip
-    sudo chmod +x $BIN_DIR/ffmpeg
+    sudo mkdir -p $FFMPEG_EXTRACT_DIR
+    sudo unzip -o $FFMPEG_ZIP -d $FFMPEG_EXTRACT_DIR
+
+    FFMPEG_BIN=$(sudo find $FFMPEG_EXTRACT_DIR -type f -name "ffmpeg" | head -n 1)
+
+    if [[ -n "$FFMPEG_BIN" ]]; then
+        sudo cp $FFMPEG_BIN $BIN_DIR/ffmpeg
+        sudo chmod +x $BIN_DIR/ffmpeg
+        echo "FFmpeg installed successfully."
+    else 
+        echo "Failed to locate FFmpeg binary in the downloaded archive."
+        exit 1
+    fi
+
+    sudo rm -rf $FFMPEG_ZIP $FFMPEG_EXTRACT_DIR
 else 
     echo "FFmpeg is already installed."
 fi

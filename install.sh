@@ -6,11 +6,6 @@ APP_NAME="goskii"
 REPO="JoelVCrasta/goskii"
 BIN_DIR="/usr/local/bin"
 
-cleanup() {
-    sudo rm -rf /tmp/ffmpeg /tmp/ffmpeg.zip
-}
-trap cleanup EXIT
-
 # Determine OS
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 
@@ -41,30 +36,36 @@ echo "Downloading dependencies..."
 # Check if FFmpeg is installed
 if ! command -v ffmpeg &> /dev/null; then
     echo "FFmpeg not found, downloading latest FFmpeg version..."
-    FFMPEG_URL="https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
-    FFMPEG_ZIP="/tmp/ffmpeg.zip"
-    FFMPEG_EXTRACT_DIR="/tmp/ffmpeg"
-
-    if ! sudo curl -sL $FFMPEG_URL -o $FFMPEG_ZIP; then
-        echo "Failed to download FFmpeg."
-        exit 1
+    
+    if [[ "$OS" == "linux" ]]; then
+        if command -v apt &> /dev/null; then
+            sudo apt update
+            sudo apt install -y ffmpeg
+        elif command -v pacman &> /dev/null; then
+            sudo pacman -Syu --noconfirm ffmpeg
+        elif command -v dnf &> /dev/null; then
+            sudo dnf install -y ffmpeg
+        elif command -v zypper &> /dev/null; then
+            sudo zypper install -y ffmpeg
+        else 
+            echo "Unsupported package manager."
+            exit 1
+        fi
+    elif [[ "$OS" == "darwin" ]]; then
+        if command -v brew &> /dev/null; then
+            brew install ffmpeg
+        else 
+            echo "Homebrew not found. Please install Homebrew and try again."
+            exit 1
+        fi
     fi
 
-    sudo mkdir -p $FFMPEG_EXTRACT_DIR
-    sudo unzip -o $FFMPEG_ZIP -d $FFMPEG_EXTRACT_DIR
-
-    FFMPEG_BIN=$(sudo find $FFMPEG_EXTRACT_DIR -type f -name "ffmpeg" | head -n 1)
-
-    if [[ -n "$FFMPEG_BIN" ]]; then
-        sudo cp $FFMPEG_BIN $BIN_DIR/ffmpeg
-        sudo chmod +x $BIN_DIR/ffmpeg
+    if command -v ffmpeg &> /dev/null; then
         echo "FFmpeg installed successfully."
-    else 
-        echo "Failed to locate FFmpeg binary in the downloaded archive."
+    else
+        echo "Error: FFmpeg installation failed."
         exit 1
     fi
-
-    sudo rm -rf $FFMPEG_ZIP $FFMPEG_EXTRACT_DIR
 else 
     echo "FFmpeg is already installed."
 fi
@@ -90,6 +91,13 @@ if ! command -v yt-dlp &> /dev/null; then
     fi
 
     sudo chmod +x $BIN_DIR/yt-dlp
+
+    if command -v yt-dlp &> /dev/null; then
+        echo "yt-dlp installed successfully."
+    else
+        echo "Error: yt-dlp installation failed."
+        exit 1
+    fi
 else
     echo "yt-dlp is already installed."
 fi

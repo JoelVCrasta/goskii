@@ -62,7 +62,7 @@ func ImageToASCII(
 		ascii = convertImage(imageData, width, height, flags.Charset, false)
 	}
 
-	if !shouldPrint {
+	if shouldPrint {
 		fmt.Println(ascii)
 	}
 
